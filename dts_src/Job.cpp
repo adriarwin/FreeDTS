@@ -1,3 +1,5 @@
+#include <iostream>;
+#include <fstream>;
 
 
 /*
@@ -59,8 +61,15 @@ else
             RNG Random1(tem_S.m_Seed);
             int itime = tem_S.m_Initial_Step;
             int etime = tem_S.m_Final_Step;
+            //Apparanetly, I should specify this in the terminal...
             int num_threads=tem_S.m_Total_no_Threads;
             int exchange_step_length = (etime-itime)/PT_steps;
+            std::ofstream tempering_moves_file("tempering_moves.txt", std::ios::app);
+            if (!tempering_moves_file.is_open()) {
+                    std::cerr &lt;&lt; "Error: Could not open the file for writing tempering moves.\n";
+                    exit(1);
+                }
+
 #if TEST_MODE == Enabled
 std::cout<<"Parallel_Tempering "<<PT_steps<<" min beta "<<PT_minbeta<<" max beta "<<PT_maxbeta<<"\n";
 #endif
@@ -77,19 +86,25 @@ std::cout<<"Parallel_Tempering "<<PT_steps<<" min beta "<<PT_minbeta<<" max beta
                 threads_energy.push_back(0);
                 betas.push_back(PT_minbeta + double(i)*(PT_maxbeta - PT_minbeta)/double(num_threads-1));
                 tempid_thread_id.push_back(i);
-
             }
+//Parallel region starts
 #pragma omp parallel if(Parallel_Tempering)
 {             //firstprivate()
                 State S(argument);
+                //checking the thread ID of each thread
+
+                //Thread_ID is a number from 0 to thread_num-1. The thread number of the 
+                //thread will determine the temperature of the system.
                 int Thread_ID = omp_get_thread_num();
                 int Thread_num = omp_get_num_threads();
+
     if(Thread_num!=num_threads)
     {
         std::cout<<" error ---> requested thread number is not provided \n";
         exit(0);
     }
                 if(num_threads>1)
+                //To be modified! How? I do not know yet!
                 S.m_Beta = PT_minbeta + double(Thread_ID)*(PT_maxbeta - PT_minbeta)/double(Thread_num-1);
                 else
                 {
@@ -114,18 +129,21 @@ std::cout<<"thread id "<<Thread_ID<<" total no threead "<<omp_get_num_threads()<
                     S.m_Initial_Step = itime + pt_step*PT_steps;   // t0+i*length_of_exchange
                     S.m_Final_Step = itime + (pt_step+1)*PT_steps;
                     
-                    // set the tempratur eof each state
+                    // set the temprature of each state
                 if(S.m_Integrator == "MC")
                 {
+                    //How expensive is it to initialize everything every time?
                     MC_Simulation SIM(&S);
                     #pragma omp critical //(filling) not sure if it is needed
                     {
-                        threads_energy[Thread_ID] = S.m_TotEnergy;   // get the latest energy of the systems
+                        threads_energy[Thread_ID] = S.m_TotEnergy;   // get the latest energy of the systems, to which
+                        //we have associated a temperature.
                     }
                     #pragma omp barrier
                     //change temprature
                     #pragma omp single
                     {
+                        double counter=0
                         // the heart of parallel temparing method
                         for (int c=0;c<betas.size()-1;c++)
                         {
@@ -135,15 +153,18 @@ std::cout<<"thread id "<<Thread_ID<<" total no threead "<<omp_get_num_threads()<
                             int t2 = tempid_thread_id[c+1];
                             double e1 = threads_energy[t1];
                             double e2 = threads_energy[t2];
-                            double cra = (e2-e1)*(b2-b1);  // should be checked
+                            double cra = (e2-e1)*(b2-b1);  // not needed, now I understand...
                             double ran = Random1.UniformRNG(1.0); //should be checked
                             if(exp(cra)>ran)
                             {
                                 // P = min(1,exp([E_i-Ej]*(1/Ti-1/Tj))) = min(1,exp([E_i-E_j]*(1/Ti-1/Tj)))
                                 tempid_thread_id[c] = t2;
                                 tempid_thread_id[c+1] = t1;
+                                counter+=1;
                             }
                         }
+                        counter=counter/(betas.size()-1)
+                        tempering_moves_file<<pt_step<<counter<<"\n";
                     }
                     #pragma omp critical //(filling) not sure if it is needed
                     {
@@ -171,6 +192,7 @@ std::cout<<"thread id "<<Thread_ID<<" total no threead "<<omp_get_num_threads()<
                 
             }
 } // end pragma omp parallel
+tempering_moves_file.close();
 }  // end of Parallel_Tempering
 #else   // When we do not use OPENMP
             {
