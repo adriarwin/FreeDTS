@@ -53,7 +53,6 @@ if (Parallel_Tempering==0)
 }
 else
 {
-            std::cout<<"Parallel_Tempering "<<PT_steps<<" min beta "<<PT_minbeta<<" max beta "<<PT_maxbeta<<"\n";
             //  Parallel_Tempering  = on PT_steps  PT_minbeta    PT_maxbeta
             double PT_minbeta = IPTdata.PT_minbeta;          // from inputfile
             double PT_maxbeta = IPTdata.PT_maxbeta;            // from inputfile
@@ -99,7 +98,6 @@ std::cout<<"Parallel_Tempering "<<PT_steps<<" min beta "<<PT_minbeta<<" max beta
                 //thread will determine the temperature of the system.
                 int Thread_ID = omp_get_thread_num();
                 int Thread_num = omp_get_num_threads();
-                std::cout<<"thread id "<<Thread_ID<<" total no threead "<<omp_get_num_threads()<<" no of assigned thread "<<m_Total_no_Threads<<"\n";
 
     if(Thread_num!=num_threads)
     {
@@ -120,7 +118,7 @@ std::cout<<"Parallel_Tempering "<<PT_steps<<" min beta "<<PT_minbeta<<" max beta
                 else
                     S.m_Targeted_State = false;
 
-                
+                std::cout<<"thread id "<<Thread_ID<<" total no threead "<<omp_get_num_threads()<<" no of assigned thread "<<m_Total_no_Threads<<"\n";
 #if TEST_MODE == Enabled
 #pragma omp critical
 std::cout<<"thread id "<<Thread_ID<<" total no threead "<<omp_get_num_threads()<<" no of assigned thread "<<m_Total_no_Threads<<"\n";
