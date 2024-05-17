@@ -141,7 +141,7 @@ std::cout<<"thread id "<<Thread_ID<<" total no threead "<<omp_get_num_threads()<
                     //change temprature
                     #pragma omp single
                     {
-                        double counter=0
+                        double counter=0;
                         // the heart of parallel temparing method
                         for (int c=0;c<betas.size()-1;c++)
                         {
@@ -161,7 +161,7 @@ std::cout<<"thread id "<<Thread_ID<<" total no threead "<<omp_get_num_threads()<
                                 counter+=1;
                             }
                         }
-                        counter=counter/(betas.size()-1)
+                        counter=counter/(betas.size()-1);
                         tempering_moves_file<<pt_step<<counter<<"\n";
                     }
                     #pragma omp critical //(filling) not sure if it is needed
