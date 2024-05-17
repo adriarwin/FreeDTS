@@ -66,10 +66,7 @@ else
             int num_threads=tem_S.m_Total_no_Threads;
             int exchange_step_length = (etime-itime)/PT_steps;
             std::ofstream tempering_moves_file("tempering_moves.txt", std::ios::app);
-            if (!tempering_moves_file.is_open()) {
-                    std::cerr &lt;&lt; "Error: Could not open the file for writing tempering moves.\n";
-                    exit(1);
-                }
+            
 
 #if TEST_MODE == Enabled
 std::cout<<"Parallel_Tempering "<<PT_steps<<" min beta "<<PT_minbeta<<" max beta "<<PT_maxbeta<<"\n";
@@ -118,7 +115,7 @@ std::cout<<"Parallel_Tempering "<<PT_steps<<" min beta "<<PT_minbeta<<" max beta
                 else
                     S.m_Targeted_State = false;
 
-                std::cout<<"thread id "<<Thread_ID<<" total no threead "<<omp_get_num_threads()<<" no of assigned thread "<<m_Total_no_Threads<<"\n";
+                std::cout<<"thread id "<<Thread_ID<<" total no threead "<<omp_get_num_threads()<<" no of assigned thread "<<Thread_num<<"\n";
 #if TEST_MODE == Enabled
 #pragma omp critical
 std::cout<<"thread id "<<Thread_ID<<" total no threead "<<omp_get_num_threads()<<" no of assigned thread "<<m_Total_no_Threads<<"\n";
