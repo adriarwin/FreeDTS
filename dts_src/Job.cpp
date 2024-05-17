@@ -47,11 +47,13 @@ if (Parallel_Tempering==0)
 {
     if(tem_S.m_Integrator == "MC")
     {
+        std::cout<<"One thread running"<<"\n";
         MC_Simulation SIM(&tem_S);
     }
 }
 else
 {
+            std::cout<<"Parallel_Tempering "<<PT_steps<<" min beta "<<PT_minbeta<<" max beta "<<PT_maxbeta<<"\n";
             //  Parallel_Tempering  = on PT_steps  PT_minbeta    PT_maxbeta
             double PT_minbeta = IPTdata.PT_minbeta;          // from inputfile
             double PT_maxbeta = IPTdata.PT_maxbeta;            // from inputfile
