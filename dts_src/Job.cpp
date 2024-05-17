@@ -8,7 +8,7 @@
  This class finds checks the name of the executable, Not a very important task for the current version
  */
 #ifdef _OPENMP
-# include <omp.h>
+#include <omp.h>
 #endif
 #include "Job.h"
 #include "State.h"
@@ -199,6 +199,7 @@ tempering_moves_file.close();
 }  // end of Parallel_Tempering
 #else   // When we do not use OPENMP
             {
+                std::cout<<"One thread running"<<"\n";
                 State S(argument);
                 if(S.m_Integrator == "MC")
                 {
