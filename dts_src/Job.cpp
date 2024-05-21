@@ -122,6 +122,9 @@ std::cout<<"thread id "<<Thread_ID<<" total no threead "<<omp_get_num_threads()<
 #endif
             //============================
             //========: Runing simulation
+            S.m_GeneralOutputFilename = gfile+ +"_temp_" + f.Int_to_String(S.m_Beta);
+            (S.m_TRJTSI).tsiFolder_name =  tsifile+"_temp_" +f.Int_to_String(S.m_Beta);
+
             for (int pt_step = 0; pt_step<exchange_step_length;pt_step++)
             {
                     S.m_Initial_Step = itime + pt_step*PT_steps;   // t0+i*length_of_exchange
@@ -163,6 +166,7 @@ std::cout<<"thread id "<<Thread_ID<<" total no threead "<<omp_get_num_threads()<
                         }
                         counter=counter/(betas.size()-1);
                         tempering_moves_file<<pt_step<<" "<<counter<<"\n";
+                        tempering_moves_file.flush();
                     }
                     #pragma omp critical //(filling) not sure if it is needed
                     {
@@ -184,8 +188,7 @@ std::cout<<"thread id "<<Thread_ID<<" total no threead "<<omp_get_num_threads()<
                         
                     }
                     #pragma omp barrier
-                    S.m_GeneralOutputFilename = gfile+ +"_temp_" + f.Int_to_String(S.m_Beta);
-                    (S.m_TRJTSI).tsiFolder_name =  tsifile+"_temp_" +f.Int_to_String(S.m_Beta);
+
                 }
                 
             }
