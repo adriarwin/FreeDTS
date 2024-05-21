@@ -198,7 +198,7 @@ int SigmaPTau = (pState->m_FrameTension).updatePeriod;
         // more here, make sure the file has info only up to the crash point
     }
     else
-        energyfile.open(outenergyfile.c_str());
+        energyfile.open(outenergyfile.c_str(),std::fstream::app);
     if((pState->m_RESTART).restartState==false)
     {
     energyfile<<" ## mcstep  energy ";
