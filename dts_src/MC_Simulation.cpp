@@ -199,7 +199,7 @@ int SigmaPTau = (pState->m_FrameTension).updatePeriod;
     }
     else
         energyfile.open(outenergyfile.c_str(),std::fstream::app);
-    if((pState->m_RESTART).restartState==false)
+    if((pState->m_RESTART).restartState==false && 2>3) //modified
     {
     energyfile<<" ## mcstep  energy ";
     if(FrameTensionCouplingFlag==true)

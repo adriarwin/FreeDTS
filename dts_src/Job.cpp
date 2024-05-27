@@ -164,8 +164,13 @@ std::cout<<"thread id "<<Thread_ID<<" total no threead "<<omp_get_num_threads()<
                                 counter+=1;
                             }
                         }
-                        counter=counter/(betas.size()-1);
-                        tempering_moves_file<<pt_step<<" "<<counter<<"\n";
+                            // Print the tempid_thread_id vector
+                        for (int id : tempid_thread_id)
+                        {
+                            tempering_moves_file << id << " ";
+                        }
+                        
+                        tempering_moves_file << "\n";
                         tempering_moves_file.flush();
                     }
                     #pragma omp critical //(filling) not sure if it is needed

@@ -51,6 +51,7 @@ class Universe:
         self.inclusion_Co=None
         self.inclusion_kappag=None
         self.inclusion_density=None
+        self.parallel_tempering=None
         self.stupid_counter=0
         
         
