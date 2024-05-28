@@ -85,10 +85,12 @@ std::cout<<"Parallel_Tempering "<<PT_steps<<" min beta "<<PT_minbeta<<" max beta
                 betas.push_back(PT_minbeta + double(i)*(PT_maxbeta - PT_minbeta)/double(num_threads-1));
                 tempid_thread_id.push_back(i);
             }
+
+            State S(argument);
 //Parallel region starts
-#pragma omp parallel if(Parallel_Tempering)
+#pragma omp parallel if(Parallel_Tempering) private(S) shared(threads_energy,betas,tempid_thread_id)
 {             //firstprivate()
-                State S(argument);
+                
                 //checking the thread ID of each thread
 
                 //Thread_ID is a number from 0 to thread_num-1. The thread number of the 
@@ -142,7 +144,6 @@ std::cout<<"thread id "<<Thread_ID<<" total no threead "<<omp_get_num_threads()<
                     //change temprature
                     #pragma omp single
                     {
-                        double counter=0;
                         // the heart of parallel temparing method
                         for (int c=0;c<betas.size()-1;c++)
                         {
@@ -159,7 +160,6 @@ std::cout<<"thread id "<<Thread_ID<<" total no threead "<<omp_get_num_threads()<
                                 // P = min(1,exp([E_i-Ej]*(1/Ti-1/Tj))) = min(1,exp([E_i-E_j]*(1/Ti-1/Tj)))
                                 tempid_thread_id[c] = t2;
                                 tempid_thread_id[c+1] = t1;
-                                counter+=1;
                             }
                         }
                             // Print the tempid_thread_id vector
