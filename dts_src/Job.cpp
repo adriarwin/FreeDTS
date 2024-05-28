@@ -127,19 +127,17 @@ std::cout<<"thread id "<<Thread_ID<<" total no threead "<<omp_get_num_threads()<
 
             for (int pt_step = 0; pt_step<exchange_step_length;pt_step++)
             {
-                    S.m_Initial_Step = itime + pt_step*PT_steps;   // t0+i*length_of_exchange
-                    S.m_Final_Step = itime + (pt_step+1)*PT_steps;
+                S.m_Initial_Step = itime + pt_step*PT_steps;   // t0+i*length_of_exchange
+                S.m_Final_Step = itime + (pt_step+1)*PT_steps;
                     
                     // set the temprature of each state
                 if(S.m_Integrator == "MC")
                 {
                     //How expensive is it to initialize everything every time?
                     MC_Simulation SIM(&S);
-                    #pragma omp critical //(filling) not sure if it is needed
-                    {
-                        threads_energy[Thread_ID] = S.m_TotEnergy;   // get the latest energy of the systems, to which
+
+                    threads_energy[Thread_ID] = S.m_TotEnergy;   // get the latest energy of the systems, to which
                         //we have associated a temperature.
-                    }
                     #pragma omp barrier
                     //change temprature
                     #pragma omp single
@@ -173,12 +171,11 @@ std::cout<<"thread id "<<Thread_ID<<" total no threead "<<omp_get_num_threads()<
                         tempering_moves_file << "\n";
                         tempering_moves_file.flush();
                     }
-                    #pragma omp critical //(filling) not sure if it is needed
-                    {
-                        std::vector<int>::iterator it= find(tempid_thread_id.begin(), tempid_thread_id.end(), Thread_ID);
-                        int temid_of_thread = std::distance(tempid_thread_id.begin(), it);
-                         if(temid_of_thread<betas.size())
-                         {
+                    
+                    std::vector<int>::iterator it= find(tempid_thread_id.begin(), tempid_thread_id.end(), Thread_ID);
+                    int temid_of_thread = std::distance(tempid_thread_id.begin(), it);
+                    if(temid_of_thread<betas.size())
+                        {
                              S.m_Beta = betas[temid_of_thread];
                              if(temid_of_thread == num_threads-1)
                                  S.m_Targeted_State = true;
@@ -191,8 +188,8 @@ std::cout<<"thread id "<<Thread_ID<<" total no threead "<<omp_get_num_threads()<
                             exit(0);
                         }
                         
-                    }
-                    #pragma omp barrier
+                    
+                    
 
                 }
                 
