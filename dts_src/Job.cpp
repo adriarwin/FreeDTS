@@ -145,21 +145,31 @@ std::cout<<"thread id "<<Thread_ID<<" total no threead "<<omp_get_num_threads()<
                     #pragma omp single
                     {
                         // the heart of parallel temparing method
+                        double control=0;
+
                         for (int c=0;c<betas.size()-1;c++)
                         {
-                            double b1 = betas[c];
-                            double b2 = betas[c+1];
-                            int t1 = tempid_thread_id[c];
-                            int t2 = tempid_thread_id[c+1];
-                            double e1 = threads_energy[t1];
-                            double e2 = threads_energy[t2];
-                            double cra = (e2-e1)*(b2-b1);  // not needed, now I understand...
-                            double ran = Random1.UniformRNG(1.0); //should be checked
-                            if(exp(cra)>ran)
+                            if(control==1)
+                            {control=0;}
+
+                            else
                             {
-                                // P = min(1,exp([E_i-Ej]*(1/Ti-1/Tj))) = min(1,exp([E_i-E_j]*(1/Ti-1/Tj)))
-                                tempid_thread_id[c] = t2;
-                                tempid_thread_id[c+1] = t1;
+
+                                double b1 = betas[c];
+                                double b2 = betas[c+1];
+                                int t1 = tempid_thread_id[c];
+                                int t2 = tempid_thread_id[c+1];
+                                double e1 = threads_energy[t1];
+                                double e2 = threads_energy[t2];
+                                double cra = (e2-e1)*(b2-b1);  // not needed, now I understand...
+                                double ran = Random1.UniformRNG(1.0); //should be checked
+                                if(exp(cra)>ran)
+                                {
+                                    // P = min(1,exp([E_i-Ej]*(1/Ti-1/Tj))) = min(1,exp([E_i-E_j]*(1/Ti-1/Tj)))
+                                    tempid_thread_id[c] = t2;
+                                    tempid_thread_id[c+1] = t1;
+                                    control=1;
+                                }
                             }
                         }
                             // Print the tempid_thread_id vector
