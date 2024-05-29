@@ -148,15 +148,15 @@ std::cout<<"thread id "<<Thread_ID<<" total no threead "<<omp_get_num_threads()<
                         // the heart of parallel temparing method
                         int control=0;
 
-                        if(control==1)
-                        {
-                        control==0;
-                        }
-                        else
-                        {
-                            for (int c=0;c<betas.size()-1;c++)
+                        
+                        for (int c=0;c<betas.size()-1;c++)
                             {
-                            
+                                    if(control==1)
+                                    {
+                                    control==0;
+                                    }
+                                    else
+                                    {
 
                                     double b1 = betas[c];
                                     double b2 = betas[c+1];
@@ -173,8 +173,9 @@ std::cout<<"thread id "<<Thread_ID<<" total no threead "<<omp_get_num_threads()<
                                         tempid_thread_id[c+1] = t1;
                                         control=1;
                                     }
+                                    }
                             }
-                        }
+                        
                             // Print the tempid_thread_id vector
                         for (int id : tempid_thread_id)
                         {
