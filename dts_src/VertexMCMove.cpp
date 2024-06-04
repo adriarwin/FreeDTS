@@ -19,6 +19,7 @@ VertexMCMove::VertexMCMove(State *pState)
     m_pSPBTG = m_pState->Get2GroupHarmonic();
     m_Beta =   m_pState->m_Beta;
     m_step = 0;
+    std::cout<<m_Beta<<"Check 1"<<std::endl;
 }
 VertexMCMove::~VertexMCMove()
 {
@@ -26,6 +27,7 @@ VertexMCMove::~VertexMCMove()
 }
 void VertexMCMove::MC_MoveAVertex(int step, vertex *pvertex, double dx, double dy, double dz,double temp, Curvature* pCurv)
 {
+    m_Beta = m_pState->m_Beta;
     m_pvertex=pvertex;
     m_dx=dx;
     m_dy=dy;
@@ -226,6 +228,7 @@ DE=NewEnergy-m_oldEnergy;
     }
     //========
                 double diff_energy = m_Beta*(DE+eG+DEPV+harmonicde+DE_OP+DE_totA);
+            
             //    std::cout<<DE<<"  "<<eG<<"  "<<DEPV<<"  "<<harmonicde<<"  "<<DE_OP<<"  \n";
             	if(diff_energy<=0 )
             	{

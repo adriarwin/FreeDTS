@@ -64,6 +64,8 @@ bool FrameTensionCouplingFlag =(pState->m_FrameTension).State;
         std::cout<<"targeted thread---> id "<<omp_get_thread_num()<<" beta "<<m_Beta<<"\n";
     }
 #endif
+
+    std::cout<<"Check 3"<<m_Beta<<std::endl;
     
 //== Reading from the mesh
     m_pBox     = (pState->m_pMesh)->m_pBox;
@@ -118,6 +120,7 @@ std::cout<<"----> Note: Total energy of the starting configuration is: "<<*tot_E
 #pragma omp critical
 std::cout<<"----> We printed our first configuration into a vtu file "<<std::endl;
 #endif
+
 //=====================================================================================
 //=====================================================================================
 //================================ MC_Simulation Starts ================================
@@ -175,6 +178,8 @@ int SigmaPTau = (pState->m_FrameTension).updatePeriod;
     Restart *pRestart = pState->GetRestart();
     BTSFile btsFile ((pState->m_TRJBTS).btsFile_name, (pState->m_RESTART).restartState, "w");
     Traj_XXX TSIFile (m_pBox,(pState->m_TRJTSI).tsiFolder_name);
+
+    
 //=========== Some rate variables
     int totallmove = 0;
     int totalvmove = 0;

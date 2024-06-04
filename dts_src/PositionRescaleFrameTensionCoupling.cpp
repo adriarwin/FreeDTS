@@ -50,6 +50,7 @@ PositionRescaleFrameTensionCoupling::~PositionRescaleFrameTensionCoupling()
 }
 bool PositionRescaleFrameTensionCoupling::MCMoveBoxChange(double dr, double * tot_Energy, double temp, int step, GenerateCNTCells *pGenCNT, std::vector<vertex *> pAllVertex, std::vector<links *> pAllLinks, std::vector<triangle* > pAllTri, Curvature *pCurv)
 {
+m_Beta = m_pState->m_Beta;
 m_pAllVertex = pAllVertex;
 m_pAllLinks = pAllLinks;
 m_pAllTriangle = pAllTri;

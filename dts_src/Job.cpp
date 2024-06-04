@@ -132,12 +132,16 @@ std::cout<<"thread id "<<Thread_ID<<" total no threead "<<omp_get_num_threads()<
             {
                 S.m_Initial_Step = itime + pt_step*PT_steps;   // t0+i*length_of_exchange
                 S.m_Final_Step = itime + (pt_step+1)*PT_steps;
+
+                
                     
                     // set the temprature of each state
                 if(S.m_Integrator == "MC")
                 {
                     //How expensive is it to initialize everything every time?
+                    std::cout<<S.m_Beta<<std::endl;
                     MC_Simulation SIM(&S);
+                    
 
                     threads_energy[Thread_ID] = S.m_TotEnergy;   // get the latest energy of the systems, to which
                         //we have associated a temperature.
@@ -153,7 +157,7 @@ std::cout<<"thread id "<<Thread_ID<<" total no threead "<<omp_get_num_threads()<
                             {
                                     if(control==1)
                                     {
-                                    control==0;
+                                    control=0;
                                     }
                                     else
                                     {

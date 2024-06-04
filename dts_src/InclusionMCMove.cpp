@@ -21,6 +21,7 @@ InclusionMCMove::~InclusionMCMove()
 }
 void InclusionMCMove::MC_Move_AnInclusion(inclusion *pinc, RNG* Random)
 {
+    m_Beta = m_pState->m_Beta;
     m_LIntEChange.clear();
     m_pLIntEChange.clear();
     

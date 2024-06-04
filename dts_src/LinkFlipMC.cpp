@@ -19,6 +19,7 @@ LinkFlipMC::LinkFlipMC(State *pState)
     m_pCFGC = m_pState->GetGlobalCurvature();
     m_step = 0;
     m_Beta = m_pState->m_Beta;
+    std::cout<<m_Beta<<"Check 2"<<std::endl;
 }
 LinkFlipMC::~LinkFlipMC()
 {
@@ -26,6 +27,7 @@ LinkFlipMC::~LinkFlipMC()
 }
 void LinkFlipMC::MC_FlipALink(int step, links *plinks,  double temp, Curvature* pCurv)
 {
+    m_Beta = m_pState->m_Beta;
     m_pLinks=plinks;
     m_Mirror=m_pLinks->GetMirrorLink();
     m_V1=m_pLinks->GetV1();
