@@ -19,7 +19,7 @@ LinkFlipMC::LinkFlipMC(State *pState)
     m_pCFGC = m_pState->GetGlobalCurvature();
     m_step = 0;
     m_Beta = m_pState->m_Beta;
-    std::cout<<m_Beta<<"Check 2"<<std::endl;
+
 }
 LinkFlipMC::~LinkFlipMC()
 {
@@ -36,6 +36,7 @@ void LinkFlipMC::MC_FlipALink(int step, links *plinks,  double temp, Curvature* 
     m_V4=m_Mirror->GetV3();
     bool flip_is_possible = CheckFlipCondition();
     m_MoveValidity=0;
+    
 
 // ========= old work =====
 if(flip_is_possible==true)

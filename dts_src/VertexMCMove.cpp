@@ -19,7 +19,7 @@ VertexMCMove::VertexMCMove(State *pState)
     m_pSPBTG = m_pState->Get2GroupHarmonic();
     m_Beta =   m_pState->m_Beta;
     m_step = 0;
-    std::cout<<m_Beta<<"Check 1"<<std::endl;
+    
 }
 VertexMCMove::~VertexMCMove()
 {

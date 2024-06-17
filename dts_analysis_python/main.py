@@ -14,50 +14,75 @@ class Universe:
     def __init__(self, input_arguments):
 
         #predefined variables
-        self.name_TrjTSI_folder='TrjTSI'
         self.area_filename='area'
         self.projected_area_filename='projected_area'
         self.membrane_thickness_filename='thickness'
         self.fluctuation_spectrum_filename='fluctuation_spectrum'
         self.energy_filename='energy'
         self.energy_steps_filename='energy_MCsteps'
+        self.projected_area_energy_filename='projected_area_ef'
         self.inclusion_average_neighbours_filename='inclusion_average_neighbours'
         self.inclusion_cluster_filename='inclusion_cluster_statistics'
         self.qvec_filename='q2vec'
         self.frame_steps_filename='frame_steps'
-        self.original_energy_filename='output-en.xvg'
         self.output_analysis_filename='analysis_output.txt'
 
-        #Paths and names of files
-        self.directory_path = None
-        self.name_output_files = ''
-        self.name_output_folder = None
-        self.path_output_folder = None
+        #Paths and names of files constructed from others
         self.path_input_dts=None
         self.output_folder_path=None
 
-        #Initial and final frames
+
+        ############ BEGINNING OF THE INPUTS from input.txt ###
+
+        #Initial and final frames subject to study
         self.initial_step = None
         self.final_step = None
 
-        #Magnitudes to be calculated/stored
-        #Frame variables
+        #names of directory where analysis is done
+        self.directory_path = None
+
+        #name of the output files and the output folder
+        self.name_output_files = ''
+        self.name_output_folder = None
+
+        #name of TrjTSI folder and name of the output energy file
+        self.name_TrjTSI_folder='TrjTSI'
+        self.name_energy_filename='output-en.xvg'
+
+        #What data is calculated and stored.
+
+        #Frame data
         self.area_calculation = 'off'
         self.inclusion_average_neighbours_calculation = 'off'
         self.inclusion_cluster_statistics_calculation = 'off'
         self.fluctuation_spectrum_planar_calculation = 'off'
         self.membrane_thickness_calculation = 'off'
-        #Non-Frame variables
+        #Non-Frame data
         self.projected_area_calculation = 'off'
         self.energy_calculation = 'off'
+
+        #######END of the INPUTS from input.txt#######
+
+        #Frame-related-varaibles
+        self.frame_path_list=None
+        self.nframes=None
+        self.frame_num_list=None
+        self.ninclusion=0
+
+        #Are we performing frame calculations or not?
+        self.frame_iteration=False
+        self.non_frame_iteration=False
 
         #Variables for calculation of fluctuation spectrum
         self.bx=None
         self.by=None
 
+        #IDK what this does!
+
         self.fluctuation_spectrum_no_inclusions = "off"
 
         #Different parameters which are inputed with the input.dts file.
+        
         self.kappa=None
         self.kappag=None
         self.inclusion_kappa=None
@@ -65,6 +90,19 @@ class Universe:
         self.inclusion_kappag=None
         self.inclusion_density=None
         self.parallel_tempering=None
+
+        #Arrays that store data from frames
+        self.area_array= None
+        self.projected_area_array= None
+        self.inclusion_average_neighbours_array = None
+        self.inclusion_cluster_statistics_array = None
+        self.fluctuation_spectrum_planar_array = None
+        self.membrane_thickness_array=None
+
+        #Arrays that store data from output energy file
+        self.projected_area_array_energy_file=None
+        self.energy_array=None
+        self.energy_MCsteps_array=None
 
         #I do not know what this counter does!
         self.stupid_counter=0
@@ -88,25 +126,43 @@ class Universe:
                               self.membrane_thickness_calculation]
         self.non_frame_variables=[self.projected_area_calculation,self.energy_calculation]
 
-        if 'on' in self.frame_variables:
+        if "on" in self.frame_variables:
             self.frame_iteration=True
-        else:
-            self.frame_iteration=False
+
+        if "on" in self.non_frame_variables:
+            self.non_frame_iteration=True
 
         #Reading input.dts. Should be improved as to include all the cases.
         self.path_input_dts=os.path.join(self.directory_path,"input.dts")
         print(self.path_input_dts)
-
-
         self.extract_parameters_dts()
         
 
+        #Creation of folder where I will keep my data (always to be done)
 
-        #Existence of frames being checked.
-        #CORRECTION: This should only be done if we are calculating something that comes from frames.
-        ######## From here ##########
+        self.output_folder_path = os.path.join(self.directory_path, self.name_output_folder)
+        # Create the folder if it doesn't exist
+        if not os.path.exists(self.output_folder_path):
+            os.makedirs(self.output_folder_path)
+
+
+
+        if self.frame_iteration==True:
+            self.generate_frame_path_list()
+            self.array_initialization_frames()
+            self.iteration_frames()
+        
+        if self.non_frame_iteration==True:
+            path=os.path.join(self.directory_path,self.name_energy_filename)
+            self.read_energy_file(path)
+
+        #Not always
+
+        self.save_data()
+
+    def generate_frame_path_list(self):
+
         self.frame_path_list=np.array([],dtype=str)
-
         #Checking existance of frames 
         for i in range(self.initial_step,self.final_step+1):
             
@@ -130,24 +186,9 @@ class Universe:
             self.frame_num_list=range(0,self.nframes)
         
         self.frame_num_list=np.array(self.frame_num_list,dtype=int)
-        #initializing important parameters from .tsi files and input.dts file
 
-
+        #Checking number of inclusions is different than zero if one has calculations.
         frame_object=frame.frame(self.frame_path_list[0])
-
-        #### To here #####
-        
-        #This should always be done, yes...
-        self.path_input_dts=os.path.join(self.directory_path,"input.dts")
-        print(self.path_input_dts)
-
-
-        self.extract_parameters_dts()
-
-
-
-        #making sure that no inclusion functions are turned off in absence of inclusions
-        #CORRECTION: Only do this if needed. 
         self.ninclusion=frame_object.ninclusion
         if self.ninclusion==0:
             self.inclusion_average_neighbours_calculation = None
@@ -157,51 +198,7 @@ class Universe:
                 self.fluctuation_spectrum_no_inclusions="on"
         
         del frame_object
-            
 
-        #Creation of folder where I will keep my data (always to be done)
-
-        if self.name_output_folder:
-            # Create the full path for the output folder
-            self.output_folder_path = os.path.join(self.directory_path, self.name_output_folder)
-            # Create the folder if it doesn't exist
-            if not os.path.exists(self.output_folder_path):
-                os.makedirs(self.output_folder_path)
-
-        else:
-            self.name_output_folder='analysis_output'
-            self.output_folder_path = os.path.join(self.directory_path, self.name_output_folder)
-            # Create the folder if it doesn't exist
-            if not os.path.exists(self.output_folder_path):
-                os.makedirs(self.output_folder_path)
-
-        #Save stuff...
-            
-
-    
-        #Always to be done
-        #initialization of different variables based on input
-        self.area_array= None
-        self.projected_area_array= None
-        self.inclusion_average_neighbours_array = None
-        self.inclusion_cluster_statistics_array = None
-        self.fluctuation_spectrum_planar_array = None
-        self.membrane_thickness_array=None
-        self.energy_array=None
-        self.energy_MCsteps_array=None
-        
-
-        self.array_initialization()
-
-        if self.energy_calculation=="on":
-            path=os.path.join(self.directory_path,self.original_energy_filename)
-            self.obtain_energy(path)
-            pass
-
-        #Not always
-        self.iteration()
-        
-        self.save_data()
 
 
     def extract_parameters_dts(self):
@@ -257,7 +254,7 @@ class Universe:
             file.write(content)
 
 
-    def obtain_energy(self, path):
+    def read_energy_file(self, path):
         print('obtaining energy')
         try:
             with open(path, 'r') as f:
@@ -269,6 +266,7 @@ class Universe:
         # Initialize lists to store data
         mcstep = []
         energy = []
+        projected_area = []
 
         # Parse each line and extract data
         for line in lines:
@@ -283,12 +281,14 @@ class Universe:
             try:
                 mcstep.append(int(columns[0]))
                 energy.append(float(columns[1]))
+                projected_area.append(float(columns[2])*float(columns[3]))
             except (IndexError, ValueError):
                 print("Skipping line with unexpected format:", line.strip())
 
         # Convert lists to numpy arrays
         self.energy_MCsteps_array = np.array(mcstep)
         self.energy_array = np.array(energy)
+        self.projected_area_array_energy_file=np.array(projected_area)
         print('energy correct')
 
 
@@ -331,46 +331,50 @@ class Universe:
         np.save(file_path,self.frame_num_list)
         
 
+        if self.frame_iteration==True:
+            if self.area_calculation=="on":
+                file_path_area=os.path.join(self.output_folder_path,self.area_filename)+self.name_output_files
+                file_path_projected_area=os.path.join(self.output_folder_path,self.projected_area_filename)+self.name_output_files
+                np.save(file_path_area,self.area_array)
+                np.save(file_path_projected_area,self.projected_area_array)
 
-        if self.area_calculation=="on":
-            file_path_area=os.path.join(self.output_folder_path,self.area_filename)+self.name_output_files
-            file_path_projected_area=os.path.join(self.output_folder_path,self.projected_area_filename)+self.name_output_files
-            np.save(file_path_area,self.area_array)
-            np.save(file_path_projected_area,self.projected_area_array)
+            
+            if self.inclusion_average_neighbours_calculation=="on":
+                file_path=os.path.join(self.output_folder_path,self.inclusion_average_neighbours_filename)+self.name_output_files
+                np.save(file_path,self.inclusion_average_neighbours_array)
+            
+            if self.inclusion_cluster_statistics_calculation=="on":
+                #Since maximum cluster size is the number of inclusions:
+                file_path=os.path.join(self.output_folder_path,self.inclusion_cluster_filename)+self.name_output_files
+                np.save(file_path,self.inclusion_cluster_statistics_array)
 
-        
-        if self.inclusion_average_neighbours_calculation=="on":
-            file_path=os.path.join(self.output_folder_path,self.inclusion_average_neighbours_filename)+self.name_output_files
-            np.save(file_path,self.inclusion_average_neighbours_array)
-        
-        if self.inclusion_cluster_statistics_calculation=="on":
-            #Since maximum cluster size is the number of inclusions:
-            file_path=os.path.join(self.output_folder_path,self.inclusion_cluster_filename)+self.name_output_files
-            np.save(file_path,self.inclusion_cluster_statistics_array)
+            if self.fluctuation_spectrum_planar_calculation=="on":
+                file_path_fs=os.path.join(self.output_folder_path,self.fluctuation_spectrum_filename)+self.name_output_files
+                file_path_qvec=os.path.join(self.output_folder_path,self.qvec_filename)+self.name_output_files
+                np.save(file_path_fs,self.fluctuation_spectrum_planar_array)
+                np.save(file_path_qvec,self.q2vec_array)
 
-        if self.fluctuation_spectrum_planar_calculation=="on":
-            file_path_fs=os.path.join(self.output_folder_path,self.fluctuation_spectrum_filename)+self.name_output_files
-            file_path_qvec=os.path.join(self.output_folder_path,self.qvec_filename)+self.name_output_files
-            np.save(file_path_fs,self.fluctuation_spectrum_planar_array)
-            np.save(file_path_qvec,self.q2vec_array)
+            if self.membrane_thickness_calculation=="on":
+                file_path=os.path.join(self.output_folder_path,self.membrane_thickness_filename)+self.name_output_files
+                np.save(file_path,self.membrane_thickness_array)
 
-        if self.membrane_thickness_calculation=="on":
-            file_path=os.path.join(self.output_folder_path,self.membrane_thickness_filename)+self.name_output_files
-            np.save(file_path,self.membrane_thickness_array)
 
-        if self.energy_calculation=="on":
+        if self.non_frame_iteration==True:
             file_path_energy=os.path.join(self.output_folder_path,self.energy_filename)+self.name_output_files
             file_path_energy_steps=os.path.join(self.output_folder_path,self.energy_steps_filename)+self.name_output_files
             np.save(file_path_energy,self.energy_array)
             np.save(file_path_energy_steps,self.energy_MCsteps_array)
+
+            file_path_projected_area_ef=os.path.join(self.output_folder_path,self.projected_area_energy_filename)+self.name_output_files
+            np.save(file_path_projected_area_ef,self.projected_area_energy_file)
+
             
 
 
 
-    def array_initialization(self):
+    def array_initialization_frames(self):
 
         if self.area_calculation=="on":
-            
             self.area_array=np.zeros((self.nframes),float)
             self.projected_area_array=np.zeros((self.nframes),float)
 
@@ -484,7 +488,7 @@ class Universe:
 
         #perform calculations
     
-    def iteration(self):
+    def iteration_frames(self):
 
         """Iterates over the desired frames and obtains quantities specified
         in the input file."""
