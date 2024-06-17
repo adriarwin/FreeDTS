@@ -105,6 +105,10 @@ class frame:
                 
                 #eliminating PBC if they were crossed
                 self.thickness=np.max(self.vertex[:,2])-np.min(self.vertex[:,2])
+                #This part needs to be rewritten. What about if you cross PBC in the 
+                #X and Y direction? For now we can leave it like that, sine all the
+                #analysis is to be done in other places. But for a vesicle, this needs
+                #to be changed!
 
                 if self.thickness>0.9*self.Lz:
                     # Find elements smaller than 50% Lz
@@ -127,7 +131,10 @@ class frame:
                     self.vertex_neighbours[self.triangle[i][0]][self.triangle[i][1]]=1
                     self.vertex_neighbours[self.triangle[i][0]][self.triangle[i][2]]=1
                     self.vertex_neighbours[self.triangle[i][1]][self.triangle[i][2]]=1
-    
+                    self.vertex_neighbours[self.triangle[i][1]][self.triangle[i][0]]=1
+                    self.vertex_neighbours[self.triangle[i][2]][self.triangle[i][0]]=1
+                    self.vertex_neighbours[self.triangle[i][2]][self.triangle[i][1]]=1
+
         except IOError:
             print("The file '{}' was not found.".format(file_path))
             return None

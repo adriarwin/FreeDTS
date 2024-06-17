@@ -28,23 +28,36 @@ class Universe:
         self.original_energy_filename='output-en.xvg'
         self.output_analysis_filename='analysis_output.txt'
 
-        #input file variables
+        #Paths and names of files
         self.directory_path = None
         self.name_output_files = ''
         self.name_output_folder = None
         self.path_output_folder = None
+        self.path_input_dts=None
+        self.output_folder_path=None
+
+        #Initial and final frames
         self.initial_step = None
         self.final_step = None
-        self.area_calculation = None
-        self.inclusion_average_neighbours_calculation = None
-        self.inclusion_cluster_statistics_calculation = None
-        self.fluctuation_spectrum_planar_calculation = None
+
+        #Magnitudes to be calculated/stored
+        #Frame variables
+        self.area_calculation = 'off'
+        self.inclusion_average_neighbours_calculation = 'off'
+        self.inclusion_cluster_statistics_calculation = 'off'
+        self.fluctuation_spectrum_planar_calculation = 'off'
+        self.membrane_thickness_calculation = 'off'
+        #Non-Frame variables
+        self.projected_area_calculation = 'off'
+        self.energy_calculation = 'off'
+
+        #Variables for calculation of fluctuation spectrum
         self.bx=None
         self.by=None
-        self.membrane_thickness_calculation = None
-        self.energy_calculation = None
-        self.path_input_dts=None
+
         self.fluctuation_spectrum_no_inclusions = "off"
+
+        #Different parameters which are inputed with the input.dts file.
         self.kappa=None
         self.kappag=None
         self.inclusion_kappa=None
@@ -52,21 +65,46 @@ class Universe:
         self.inclusion_kappag=None
         self.inclusion_density=None
         self.parallel_tempering=None
+
+        #I do not know what this counter does!
         self.stupid_counter=0
         
         
-        self.output_folder_path=None
+        
 
-        #assigning
+        #assigning the values of the input file to our variables.
         self.parse_input_file(input_arguments.input_file)
 
+        #overwriting with terminal inputs
         for attr, value in vars(input_arguments).items():
             if value is not None:
                 setattr(self, attr, value)
         
+        #Defining self.frame_variables and self.non_frame_variables, for the case
+        #in which only non_frame_variables want to be worked out.
+
+        self.frame_variables=[self.area_calculation,self.inclusion_average_neighbours_calculation, \
+                              self.inclusion_cluster_statistics_calculation,self.fluctuation_spectrum_planar_calculation,
+                              self.membrane_thickness_calculation]
+        self.non_frame_variables=[self.projected_area_calculation,self.energy_calculation]
+
+        if 'on' in self.frame_variables:
+            self.frame_iteration=True
+        else:
+            self.frame_iteration=False
+
+        #Reading input.dts. Should be improved as to include all the cases.
+        self.path_input_dts=os.path.join(self.directory_path,"input.dts")
+        print(self.path_input_dts)
+
+
+        self.extract_parameters_dts()
         
 
 
+        #Existence of frames being checked.
+        #CORRECTION: This should only be done if we are calculating something that comes from frames.
+        ######## From here ##########
         self.frame_path_list=np.array([],dtype=str)
 
         #Checking existance of frames 
@@ -96,16 +134,20 @@ class Universe:
 
 
         frame_object=frame.frame(self.frame_path_list[0])
+
+        #### To here #####
         
+        #This should always be done, yes...
         self.path_input_dts=os.path.join(self.directory_path,"input.dts")
         print(self.path_input_dts)
+
 
         self.extract_parameters_dts()
 
 
 
         #making sure that no inclusion functions are turned off in absence of inclusions
-
+        #CORRECTION: Only do this if needed. 
         self.ninclusion=frame_object.ninclusion
         if self.ninclusion==0:
             self.inclusion_average_neighbours_calculation = None
@@ -117,7 +159,7 @@ class Universe:
         del frame_object
             
 
-        #Creation of folder where I will keep my data:
+        #Creation of folder where I will keep my data (always to be done)
 
         if self.name_output_folder:
             # Create the full path for the output folder
@@ -137,7 +179,7 @@ class Universe:
             
 
     
-
+        #Always to be done
         #initialization of different variables based on input
         self.area_array= None
         self.projected_area_array= None
@@ -156,6 +198,7 @@ class Universe:
             self.obtain_energy(path)
             pass
 
+        #Not always
         self.iteration()
         
         self.save_data()
