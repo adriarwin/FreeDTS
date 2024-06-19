@@ -49,7 +49,8 @@ class Universe:
         self.name_TrjTSI_folder='TrjTSI'
         self.name_energy_filename='output-en.xvg'
 
-        #What data is calculated and stored.
+        #temperature of your system
+        self.beta=1
 
         #Frame data
         self.area_calculation = 'off'
@@ -60,6 +61,8 @@ class Universe:
         #Non-Frame data
         self.projected_area_calculation = 'off'
         self.energy_calculation = 'off'
+        #Parallel tempering method on or off
+        self.parallel_tempering = 'off'
 
         #######END of the INPUTS from input.txt#######
 
@@ -82,14 +85,35 @@ class Universe:
         self.fluctuation_spectrum_no_inclusions = "off"
 
         #Different parameters which are inputed with the input.dts file.
-        
-        self.kappa=None
-        self.kappag=None
+        #membrane parameters
+        self.Spont_C=0.0
+        self.kappa=20.0
+        self.kappag=0.0
+        #inclusion parameters
+        #A number that tells how many types of inclusions (N) we have got
+        self.number_of_inclusion_type=None
+        #A list of type [[1,'S'],[2,'A'],...,[N,'S']] which tells the assigned
+        #number to each inclusion and if it is symmetric ('S') or asymmetric ('A')
+        self.inclusion_type=[]
+        #Inclusion definition. A list of type [[K,Kg,C0],[Kp,Kl,Cp,Cl],...,[Kp,Kl,Cp,Cl]] depending on
+        #the data of each inclusion
+        self.inclusion_definition=[]
+        #Inclusion density. A list of type [d1,d2,d3], where d1 is the inclusion density of inclusion type 1..
+        self.inclusion_density=[]
+        self.inclusion_density_in_input=False
+
+        #Variable that tell us if there are inclusion
+        self.inclusion=False
+
+        #This is to be modified
         self.inclusion_kappa=None
         self.inclusion_Co=None
         self.inclusion_kappag=None
-        self.inclusion_density=None
-        self.parallel_tempering=None
+
+        
+
+        
+        
 
         #Arrays that store data from frames
         self.area_array= None
@@ -135,8 +159,12 @@ class Universe:
         #Reading input.dts. Should be improved as to include all the cases.
         self.path_input_dts=os.path.join(self.directory_path,"input.dts")
         print(self.path_input_dts)
-        self.extract_parameters_dts()
-        
+        self.extract_membrane_parameters_dts()
+        self.extract_inclusion_parameters_dts()
+
+        print('Inclusion type',self.inclusion_type)
+        print('Inclusion definition',self.inclusion_definition)
+        print('Inclusion density',self.inclusion_density)
 
         #Creation of folder where I will keep my data (always to be done)
 
@@ -191,6 +219,7 @@ class Universe:
         frame_object=frame.frame(self.frame_path_list[0])
         self.ninclusion=frame_object.ninclusion
         if self.ninclusion==0:
+            self.inclusion==False
             self.inclusion_average_neighbours_calculation = None
             self.inclusion_cluster_statistics_calculation = None
 
@@ -198,45 +227,99 @@ class Universe:
                 self.fluctuation_spectrum_no_inclusions="on"
         
         del frame_object
+        
 
 
-
-    def extract_parameters_dts(self):
-    
-        print('here')
-        inclusion_parameters = []
-        density = None
+    def extract_membrane_parameters_dts(self):
 
         with open(self.path_input_dts, 'r') as file:
             for line in file:
                 line = line.strip()
 
-                # Extract kappa
-                if line.startswith("Kappa"):
-                    variable, value = line.split('=')
+                    # Extract kappa
+                if line.lstrip().startswith("Kappa"):
+                    _, value = line.split('=')
                     floats = [float(x) for x in value.split()]
                     print(floats)
                     self.kappa = floats[0]
-                    self.kappag =floats[1]
+                    self.kappag = floats[1]
 
-                # Extract inclusion parameters
-                if line.startswith("1"):
-                    params = line.split()
-                    if len(params) >= 7:
-                        third_number = float(params[2])
-                        forth_number = float(params[3])
-                        seventh_number = float(params[6])
-                        inclusion_parameters.append([third_number, forth_number, seventh_number])
+                    # Extract Spont_C
+                elif line.lstrip().startswith("Spont_C"):
+                    _, value = line.split('=')
+                    self.Spont_C = float(value)
 
-                # Extract density
-                if line.startswith("Density"):
-                    density_match = re.match(r'Density\s+(\S+)', line)
-                    if density_match:
-                        self.inclusion_density = float(density_match.group(1))
+    def extract_inclusion_parameters_dts(self):
+        inclusion_section = False
+        inclusion_interactions_section = False
+        
 
-        self.inclusion_kappa=inclusion_parameters[0][0]-self.kappa
-        self.inclusion_kappag=inclusion_parameters[0][1]-self.kappag
-        self.inclusion_Co=inclusion_parameters[0][2]
+        with open(self.path_input_dts, 'r') as file:
+            for line in file:
+                line = line.strip()
+
+                # Detect the start of the INCLUSION section
+                if line == "INCLUSION":
+                    inclusion_section = True
+                    inclusion_interactions_section = False
+                    self.inclusion=True
+                    continue
+
+                # Detect the start of the Inclusion-Inclusion-Int section
+                if line == "Inclusion-Inclusion-Int":
+                    inclusion_interactions_section = True
+                    inclusion_section = False
+                    continue
+
+                
+
+                # Process inclusion parameters
+                if inclusion_section:
+                    # Detect number of inclusions
+                    if line.startswith("Define"):
+                        self.number_of_inclusion_type = int(line.split()[1])
+                        continue
+
+                    # Skip the header line
+                    if line.startswith("SRotation"):
+                        continue
+
+                    # Detect inclusion types and their parameters
+                    if re.match(r"^\d", line):
+                        params = line.split()
+                        inclusion_id = int(params[1][3]) # Extract the type (e.g., Pro1, Pro2)
+                        
+                        print(inclusion_id)
+                        # Determine if the inclusion is symmetric or asymmetric
+                        k_values = [float(params[2])-self.kappa, float(params[3]), float(params[6])]
+                        kp_values = [float(params[4]), float(params[5]), float(params[7]), float(params[8])]
+
+                        print(k_values)
+                        print(kp_values)
+
+                        if any(k_values):
+                            inclusion_symmetry = 'S'
+                            inclusion_data = k_values
+                        elif any(kp_values):
+                            inclusion_symmetry = 'A'
+                            inclusion_data = kp_values
+                        else:
+                            inclusion_symmetry = 'U'  # Default if neither condition is met
+                            inclusion_data = k_values
+
+                        self.inclusion_type.append([inclusion_id, inclusion_symmetry])
+
+                        # Store inclusion data
+                        self.inclusion_definition.append(inclusion_data)
+
+                    # Extract density
+                    elif line.startswith("Density"):
+                        self.inclusion_density_in_input=True
+                        densities = line.split()[1:]
+                        self.inclusion_density = [float(d) for d in densities]                   
+
+
+        
 
     
     def write_output_file(self,output_path):
@@ -244,10 +327,27 @@ class Universe:
               f"Final step={self.final_step}\n" \
               f"kappa={self.kappa}\n" \
               f"kappa_g={self.kappag}\n" \
-              f"inclusion_kappa={self.inclusion_kappa}\n" \
-              f"inclusion_kappa_g={self.inclusion_kappag}\n" \
-              f"inclusion_Co={self.inclusion_Co}\n" \
-              f"inclusion_density={self.inclusion_density}\n"
+              f"Spont_C={self.Spont_C}\n" \
+              
+        
+              
+        if self.inclusion==True:
+            content+=f"INCLUSIONS\n"
+            for i in range(0,self.number_of_inclusion_type):
+                string0=f"Inclusion type {i+1}\n"
+                string1=f"Type={self.inclusion_type[i][0]},{self.inclusion_type[i][1]}\n"
+                if (self.inclusion_type[i][1]=="S" or self.inclusion_type[i][1]=="U"):
+                    string2=f"Data={self.inclusion_definition[i][0]},{self.inclusion_definition[i][1]},{self.inclusion_definition[i][2]}\n" 
+                elif self.inclusion_type[i][1]=="A":
+                    string2=f"Data={self.inclusion_definition[i][0]},{self.inclusion_definition[i][1]},{self.inclusion_definition[i][2]},{self.inclusion_definition[i][3]}\n"
+                
+                content+=string0+string1+string2
+
+                if self.inclusion_density_in_input==True:
+                    string3=f"Density={self.inclusion_density[i]}\n"
+                    content+=string3
+
+                
 
         # Write the content to the file
         with open(output_path, 'w') as file:
@@ -327,11 +427,12 @@ class Universe:
 
         self.write_output_file(file_path)
         
-        file_path=os.path.join(self.output_folder_path,self.frame_steps_filename)+self.name_output_files
-        np.save(file_path,self.frame_num_list)
+    
         
 
         if self.frame_iteration==True:
+            file_path=os.path.join(self.output_folder_path,self.frame_steps_filename)+self.name_output_files
+            np.save(file_path,self.frame_num_list)
             if self.area_calculation=="on":
                 file_path_area=os.path.join(self.output_folder_path,self.area_filename)+self.name_output_files
                 file_path_projected_area=os.path.join(self.output_folder_path,self.projected_area_filename)+self.name_output_files
@@ -366,7 +467,7 @@ class Universe:
             np.save(file_path_energy_steps,self.energy_MCsteps_array)
 
             file_path_projected_area_ef=os.path.join(self.output_folder_path,self.projected_area_energy_filename)+self.name_output_files
-            np.save(file_path_projected_area_ef,self.projected_area_energy_file)
+            np.save(file_path_projected_area_ef,self.projected_area_array_energy_file)
 
             
 

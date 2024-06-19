@@ -1,10 +1,11 @@
-directory_path=/lustre/astro/adriarwi/tau0/set1.1/data/p0.0c00.0kkg1/rep1
+directory_path=/home/adriarwin/blebbing/test_flat/tau0/kpkl1fzero
 name_output_folder=analysis_output
 initial_step=1
 final_step=5000
-area_calculation=on
-inclusion_average_neighbours_calculation=on
-inclusion_cluster_statistics_calculation=on
-fluctuation_spectrum_planar_calculation= on 5 5
-membrane_thickness_calculation=on
+area_calculation=off
+inclusion_average_neighbours_calculation=off
+inclusion_cluster_statistics_calculation=off
+fluctuation_spectrum_planar_calculation= off 5 5
+membrane_thickness_calculation=off
 energy_calculation=on
+projected_area=on
