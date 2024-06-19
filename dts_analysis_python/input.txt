@@ -9,3 +9,4 @@ fluctuation_spectrum_planar_calculation= off 5 5
 membrane_thickness_calculation=off
 energy_calculation=on
 projected_area=on
+name_energy_filename=output-en.xvg
