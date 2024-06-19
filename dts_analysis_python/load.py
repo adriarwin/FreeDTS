@@ -65,4 +65,59 @@ class Load:
             self.universe.energy_MCsteps_array = np_load_with_extension(file_path_energy_steps)
             self.universe.projected_area_array_energy_file = np_load_with_extension(file_path_projected_area_energy)
 
+    def load_data_pt(self):
+        # Helper function to load npy file with extension if needed
+        def np_load_with_extension(file_path):
+            if not file_path.endswith('.npy'):
+                file_path += '.npy'
+            return np.load(file_path)
+
+        def check_file_existence(file_path):
+            if not os.path.exists(file_path):
+                raise FileNotFoundError(f"File '{file_path}' not found.")
+            
+        if self.universe.non_frame_iteration and self.universe.parallel_tempering_on:
+            # Load tempering moves
+            file_path_tempering_moves = os.path.join(self.universe.output_folder_path, self.universe.tempering_moves_filename + self.universe.name_output_files)
+            check_file_existence(file_path_tempering_moves + '.npy')
+            self.universe.tempering_moves_array = np_load_with_extension(file_path_tempering_moves)
+
+            # Load beta list
+            file_path_beta_list = os.path.join(self.universe.output_folder_path, self.universe.beta_list_filename + self.universe.name_output_files)
+            check_file_existence(file_path_beta_list + '.npy')
+            self.universe.beta_list = np_load_with_extension(file_path_beta_list)
+
+            # Load each energy array individually
+            self.universe.energy_array = []
+            i = 0
+            while True:
+                file_path_energy = os.path.join(self.universe.output_folder_path, f"{self.universe.energy_filename}_{i}") + self.universe.name_output_files + '.npy'
+                if os.path.exists(file_path_energy):
+                    self.universe.energy_array.append(np_load_with_extension(file_path_energy))
+                    i += 1
+                else:
+                    break
+
+            # Load each energy steps array individually
+            self.universe.energy_MCsteps_array = []
+            i = 0
+            while True:
+                file_path_energy_steps = os.path.join(self.universe.output_folder_path, f"{self.universe.energy_steps_filename}_{i}") + self.universe.name_output_files + '.npy'
+                if os.path.exists(file_path_energy_steps):
+                    self.universe.energy_MCsteps_array.append(np_load_with_extension(file_path_energy_steps))
+                    i += 1
+                else:
+                    break
+
+            # Load each projected area energy file array individually
+            self.universe.projected_area_array_energy_file = []
+            i = 0
+            while True:
+                file_path_projected_area_ef = os.path.join(self.universe.output_folder_path, f"{self.universe.projected_area_energy_filename}_{i}") + self.universe.name_output_files + '.npy'
+                if os.path.exists(file_path_projected_area_ef):
+                    self.universe.projected_area_array_energy_file.append(np_load_with_extension(file_path_projected_area_ef))
+                    i += 1
+                else:
+                    break
+
 

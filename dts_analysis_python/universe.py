@@ -23,6 +23,8 @@ class Universe:
         self.qvec_filename='q2vec'
         self.frame_steps_filename='frame_steps'
         self.output_analysis_filename='analysis_output.txt'
+        self.tempering_moves_filename='tempering_moves'
+        self.beta_list_filename='beta_list'
 
         #Paths and names of files constructed from others
         self.path_input_dts=None
@@ -106,11 +108,13 @@ class Universe:
         self.parallel_tempering_on=False
         self.name_TrjTSI_folder_pt='TrjTSI_temp_'
         self.name_energy_file_pt='output_temp_'
+        self.name_tempering_moves_file='tempering_moves.txt'
         self.TrjTSI_path_list = []
         self.energy_files_list = []
         self.beta_list = None
-        self.tempering_file = None
-
+        self.tempering_moves_array = None
+        self.number_of_temperatures=None
+        self.parallel_tempering_tau = None
         
 
         
@@ -157,12 +161,14 @@ class Universe:
         if "on" in self.non_frame_variables:
             self.non_frame_iteration=True
 
-        
+        self.path_input_dts=os.path.join(self.directory_path,"input.dts")
+
         if self.parallel_tempering=="on":
             self.parallel_tempering_on=True
+            self.extract_pt_parameters_dts()
 
         #Reading input.dts. Should be improved as to include all the cases.
-        self.path_input_dts=os.path.join(self.directory_path,"input.dts")
+        
         self.extract_membrane_parameters_dts()
         self.extract_inclusion_parameters_dts()
 
@@ -185,29 +191,40 @@ class Universe:
                 
                 if self.non_frame_iteration==True:
                     path=os.path.join(self.directory_path,self.name_energy_filename)
-                    self.read_energy_file(path)
+                    self.energy_MCsteps_array, self.energy_array,self.projected_area_array_energy_file=self.read_energy_file(path)
+
+                self.save_data()
 
             elif self.parallel_tempering_on==True:
 
                 temp_folders,energy_files,temperature_list=self.sort_and_order_lists(self.name_TrjTSI_folder_pt,self.name_energy_file_pt)
-                print(temp_folders,energy_files,temperature_list)
+                self.number_of_temperatures=len(temperature_list)
 
                 self.beta_list=np.array(temperature_list)
                 self.energy_files_list = [os.path.join(self.directory_path, file) for file in energy_files]
                 self.TrjTSI_path_list = [os.path.join(self.directory_path, folder) for folder in temp_folders]
 
+                self.tempering_moves_array=self.read_tempering_moves(self.name_tempering_moves_file)
 
                 if self.non_frame_iteration==True:
-                    print('okay')
+                    self.read_energy_file_pt(self.energy_files_list)
 
+                self.save_data_pt()
+                    
                 
 
 
-            self.save_data()
+            
 
         elif read_only_mode==True:
-            loader = load.Load(self)
-            loader.load_data()
+
+            if self.parallel_tempering_on==False:
+                loader = load.Load(self)
+                loader.load_data()
+
+            elif self.parallel_tempering_on==True:
+                loader = load.Load(self)
+                loader.load_data_pt()
 
 
 
@@ -251,6 +268,15 @@ class Universe:
         
         del frame_object
         
+
+    def extract_pt_parameters_dts(self):
+
+        with open(self.path_input_dts, 'r') as file:
+            for line in file:
+                line = line.strip()
+                if line.startswith("Parallel_Tempering"):
+                    _, value = line.split('=')
+                    self.parallel_tempering_tau=int(value.split()[1])
 
 
     def extract_membrane_parameters_dts(self):
@@ -409,10 +435,22 @@ class Universe:
                 print("Skipping line with unexpected format:", line.strip())
 
         # Convert lists to numpy arrays
-        self.energy_MCsteps_array = np.array(mcstep)
-        self.energy_array = np.array(energy)
-        self.projected_area_array_energy_file=np.array(projected_area)
-        print('energy correct')
+
+        
+        return np.array(mcstep), np.array(energy), np.array(projected_area)
+    
+    def read_energy_file_pt(self, energy_files_list):
+
+        self.energy_MCsteps_array=[]
+        self.energy_array=[]
+        self.projected_area_array_energy_file=[]
+        for i in range(0,len(self.beta_list)):
+
+            mcstep1,energy1,projected_area1=self.read_energy_file(energy_files_list[i])
+            self.energy_MCsteps_array.append(mcstep1)
+            self.energy_array.append(energy1)
+            self.projected_area_array_energy_file.append(projected_area1)
+
 
 
 
@@ -491,6 +529,34 @@ class Universe:
 
             file_path_projected_area_ef=os.path.join(self.output_folder_path,self.projected_area_energy_filename)+self.name_output_files
             np.save(file_path_projected_area_ef,self.projected_area_array_energy_file)
+
+    def save_data_pt(self):
+        #Writing the output file
+        file_path = os.path.join(self.output_folder_path, self.output_analysis_filename) + self.name_output_files
+        self.write_output_file(file_path)
+        #Saving the tempering moves
+        file_path_tempering_moves=os.path.join(self.output_folder_path, self.tempering_moves_filename) + self.name_output_files
+        np.save(file_path_tempering_moves,self.tempering_moves_array)
+        #Saving the beta list
+        file_path_beta_list=os.path.join(self.output_folder_path, self.beta_list_filename) + self.name_output_files
+        np.save(file_path_beta_list,self.beta_list)
+
+        if self.non_frame_iteration:
+            # Save each energy array individually
+            for i, energy in enumerate(self.energy_array):
+                file_path_energy = os.path.join(self.output_folder_path, f"{self.energy_filename}_{i}") + self.name_output_files
+                np.save(file_path_energy, energy)
+
+            # Save each energy steps array individually
+            for i, energy_steps in enumerate(self.energy_MCsteps_array):
+                file_path_energy_steps = os.path.join(self.output_folder_path, f"{self.energy_steps_filename}_{i}") + self.name_output_files
+                np.save(file_path_energy_steps, energy_steps)
+
+            # Save each projected area energy file array individually
+            for i, projected_area in enumerate(self.projected_area_array_energy_file):
+                file_path_projected_area_ef = os.path.join(self.output_folder_path, f"{self.projected_area_energy_filename}_{i}") + self.name_output_files
+                np.save(file_path_projected_area_ef, projected_area)
+
 
             
 
@@ -636,7 +702,7 @@ class Universe:
                 temp_folders.append(item)
         return temp_folders
     
-    def read_energy_file_pt(self, name):
+    def read_energy_files_pt(self, name):
         energy_files = []
         for item in os.listdir(self.directory_path):
             if os.path.isfile(os.path.join(self.directory_path, item)) and item.startswith(name) and item.endswith('.xvg'):
@@ -647,7 +713,7 @@ class Universe:
     def sort_and_order_lists(self,name_TrjTSI_folder,name_energy_files):
         # Step 1: Read temperature folders and energy files
         temp_folders = self.read_temperature_folders(name_TrjTSI_folder)
-        energy_files = self.read_energy_file_pt(name_energy_files)
+        energy_files = self.read_energy_files_pt(name_energy_files)
 
         print(temp_folders,energy_files)
         # Step 2: Extract temperatures from temp_folders
@@ -682,3 +748,16 @@ class Universe:
                     break
 
         return ordered_temp_folders, ordered_energy_files, sorted_temperatures
+    
+    def read_tempering_moves(self,name_tempering_moves_file):
+        file_path = os.path.join(self.directory_path, name_tempering_moves_file)
+        
+        tempering_moves_list = []
+        with open(file_path, 'r') as file:
+            for line in file:
+                # Split the line by spaces and convert each element to an integer
+                tempering_moves_list.append([int(x) for x in line.split()])
+        
+        # Convert the list of lists to a numpy array
+        return np.array(tempering_moves_list)
+

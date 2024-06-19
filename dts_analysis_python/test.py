@@ -20,5 +20,5 @@ args2=Namespace()
 read_only_mode=True
 data=universe.Universe(args2,read_only_mode)
 
-print(data.inclusion_definition)
+print(data.projected_area_array_energy_file[0])
 
