@@ -102,10 +102,14 @@ class Universe:
         #Variable that tell us if there are inclusion
         self.inclusion=False
 
-        #This is to be modified
-        self.inclusion_kappa=None
-        self.inclusion_Co=None
-        self.inclusion_kappag=None
+        #Parallel tempering related variables
+        self.parallel_tempering_on=False
+        self.name_TrjTSI_folder_pt='TrjTSI_temp_'
+        self.name_energy_file_pt='output_temp_'
+        self.TrjTSI_path_list = []
+        self.energy_files_list = []
+        self.beta_list = None
+        self.tempering_file = None
 
         
 
@@ -153,6 +157,10 @@ class Universe:
         if "on" in self.non_frame_variables:
             self.non_frame_iteration=True
 
+        
+        if self.parallel_tempering=="on":
+            self.parallel_tempering_on=True
+
         #Reading input.dts. Should be improved as to include all the cases.
         self.path_input_dts=os.path.join(self.directory_path,"input.dts")
         self.extract_membrane_parameters_dts()
@@ -168,15 +176,31 @@ class Universe:
                 os.makedirs(self.output_folder_path)
 
 
+            if self.parallel_tempering_on==False:
 
-            if self.frame_iteration==True:
-                self.generate_frame_path_list()
-                self.array_initialization_frames()
-                self.iteration_frames()
-            
-            if self.non_frame_iteration==True:
-                path=os.path.join(self.directory_path,self.name_energy_filename)
-                self.read_energy_file(path)
+                if self.frame_iteration==True:
+                    self.generate_frame_path_list()
+                    self.array_initialization_frames()
+                    self.iteration_frames()
+                
+                if self.non_frame_iteration==True:
+                    path=os.path.join(self.directory_path,self.name_energy_filename)
+                    self.read_energy_file(path)
+
+            elif self.parallel_tempering_on==True:
+
+                temp_folders,energy_files,temperature_list=self.sort_and_order_lists(self.name_TrjTSI_folder_pt,self.name_energy_file_pt)
+                print(temp_folders,energy_files,temperature_list)
+
+                self.beta_list=np.array(temperature_list)
+                self.energy_files_list = [os.path.join(self.directory_path, file) for file in energy_files]
+                self.TrjTSI_path_list = [os.path.join(self.directory_path, folder) for folder in temp_folders]
+
+
+                if self.non_frame_iteration==True:
+                    print('okay')
+
+                
 
 
             self.save_data()
@@ -604,3 +628,57 @@ class Universe:
 
             #elapsed_time = end_time - start_time
             #print("Percentatge",i/(self.frame_num_list[-1]),"Elapsed time:", elapsed_time, "seconds")
+
+    def read_temperature_folders(self,name):
+        temp_folders = []
+        for item in os.listdir(self.directory_path):
+            if os.path.isdir(os.path.join(self.directory_path, item)) and item.startswith(name):
+                temp_folders.append(item)
+        return temp_folders
+    
+    def read_energy_file_pt(self, name):
+        energy_files = []
+        for item in os.listdir(self.directory_path):
+            if os.path.isfile(os.path.join(self.directory_path, item)) and item.startswith(name) and item.endswith('.xvg'):
+                energy_files.append(item)
+        return energy_files
+    
+    
+    def sort_and_order_lists(self,name_TrjTSI_folder,name_energy_files):
+        # Step 1: Read temperature folders and energy files
+        temp_folders = self.read_temperature_folders(name_TrjTSI_folder)
+        energy_files = self.read_energy_file_pt(name_energy_files)
+
+        print(temp_folders,energy_files)
+        # Step 2: Extract temperatures from temp_folders
+        temperatures = []
+        for folder in temp_folders:
+            try:
+                temperature = float(folder.split('_')[-1])
+                temperatures.append(temperature)
+            except ValueError:
+                pass
+        print(temperatures)
+        # Step 3: Convert temperatures to a numpy array and sort it
+        temperatures_array = np.array(temperatures)
+        sorted_temperatures = np.sort(temperatures_array)
+
+        # Step 4: Order temp_folders and energy_files based on sorted_temperatures
+        ordered_temp_folders = []
+        ordered_energy_files = []
+
+        for temp in sorted_temperatures:
+            temp_str = f"TrjTSI_temp_{temp}"
+            for folder in temp_folders:
+                if temp_str in folder:
+                    ordered_temp_folders.append(folder)
+                    break
+
+        for temp in sorted_temperatures:
+            temp_str = f"output_temp_{temp}-en.xvg"
+            for file in energy_files:
+                if temp_str in file:
+                    ordered_energy_files.append(file)
+                    break
+
+        return ordered_temp_folders, ordered_energy_files, sorted_temperatures
