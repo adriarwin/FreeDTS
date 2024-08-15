@@ -162,7 +162,7 @@ class frame:
                 self.inclusion_connectivity_matrix[i,inclusion_indices]=1
                 self.inclusion_average_neighbours+=size_inclusion_indices
 
-        self.inclusion_average_neighbours=self.inclusion_average_neighbours/(self.ninclusion)
+        self.inclusion_average_neighbours=self.inclusion_average_neighbours/(2*self.ninclusion)
     
     def inclusion_cluster(self):
         """This function calculates the number of connected components of a graph. Connectivity matrix
