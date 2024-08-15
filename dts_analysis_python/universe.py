@@ -204,6 +204,9 @@ class Universe:
                 self.energy_files_list = [os.path.join(self.directory_path, file) for file in energy_files]
                 self.TrjTSI_path_list = [os.path.join(self.directory_path, folder) for folder in temp_folders]
 
+                print(self.beta_list)
+                print(self.energy_files_list)
+
                 self.tempering_moves_array=self.read_tempering_moves(self.name_tempering_moves_file)
 
                 if self.non_frame_iteration==True:
@@ -444,7 +447,7 @@ class Universe:
         self.energy_MCsteps_array=[]
         self.energy_array=[]
         self.projected_area_array_energy_file=[]
-        for i in range(0,len(self.beta_list)):
+        for i in range(0,len(energy_files_list)):
 
             mcstep1,energy1,projected_area1=self.read_energy_file(energy_files_list[i])
             self.energy_MCsteps_array.append(mcstep1)
